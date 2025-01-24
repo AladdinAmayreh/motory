@@ -12,6 +12,12 @@ $config = [
         '@npm'   => '@vendor/npm-asset',
     ],
     'components' => [
+        'formatter' => [
+            'class' => 'yii\i18n\Formatter',
+            'currencyCode' => 'SAR', 
+        'locale' => 'ar-SA',   
+        ],
+
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => 'tnxtuufu_XBkhTrR50cOBwn4yRnDswem',
@@ -37,7 +43,8 @@ $config = [
             'targets' => [
                 [
                     'class' => 'yii\log\FileTarget',
-                    'levels' => ['error', 'warning'],
+                    'levels' => ['error', 'warning', 'info'],
+
                 ],
             ],
         ],
