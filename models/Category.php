@@ -3,6 +3,7 @@ namespace app\models;
 
 use Yii;
 use yii\db\ActiveRecord;
+use app\behaviors\LoggingBehavior;
 
 class Category extends ActiveRecord
 {
@@ -15,11 +16,10 @@ class Category extends ActiveRecord
     {
         return [
             [['name', 'description'], 'required'],
-          
-            // Add other validation rules as necessary
+            [['name', 'description'], 'string'],
+            [['created_at', 'updated_at'], 'safe'],
         ];
     }
-
     public function attributeLabels()
     {
         return [
@@ -30,7 +30,12 @@ class Category extends ActiveRecord
             'updated_at' => 'Updated At',
         ];
     }
-
+    public function behaviors()
+    {
+        return [
+            LoggingBehavior::class,
+        ];
+    }
     /**
      * Get all services related to this category.
      */
@@ -38,4 +43,12 @@ class Category extends ActiveRecord
     {
         return $this->hasMany(Service::class, ['category_id' => 'id']);
     }
+    public function beforeSave($insert)
+{
+    if (parent::beforeSave($insert)) {
+        // Ensure this method does not override the attributes being updated
+        return true;
+    }
+    return false;
+}
 }

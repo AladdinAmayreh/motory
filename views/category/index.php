@@ -22,7 +22,7 @@ $this->params['breadcrumbs'][] = $this->title;
             
             [
                 'class' => 'yii\grid\ActionColumn',
-                'template' => '{update} {delete}',
+                'template' => '{update} {delete} {logs}',
                 'buttons' => [
                     'update' => function ($url, $model) {
                         return Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']);
@@ -34,6 +34,11 @@ $this->params['breadcrumbs'][] = $this->title;
                                 'confirm' => 'Are you sure you want to delete this category?',
                                 'method' => 'post',
                             ],
+                        ]);
+                    },
+                    'logs' => function ($url, $model) {
+                        return Html::a('View Logs', ['category/view-logs', 'entity' => 'Category', 'entity_id' => $model->id], [
+                            'class' => 'btn btn-info',
                         ]);
                     },
                 ],

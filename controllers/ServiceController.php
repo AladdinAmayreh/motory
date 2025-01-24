@@ -4,6 +4,8 @@ namespace app\controllers;
 use Yii;
 use app\models\Service;
 use app\models\Category;
+use app\models\ServicesImages;
+use app\models\ChangeLogs;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\web\UploadedFile;
@@ -14,47 +16,101 @@ class ServiceController extends Controller
 {
     public function actionIndex()
     {
-        // Create an ActiveDataProvider instance for the Service model
+        // Create a data provider for the Service model
         $dataProvider = new ActiveDataProvider([
             'query' => Service::find(),
             'pagination' => [
-                'pageSize' => 5,  // Set the number of items per page
+                'pageSize' => 10, // Number of items per page
+            ],
+            'sort' => [
+                'defaultOrder' => [
+                    'created_at' => SORT_DESC, // Sort by latest first
+                ],
             ],
         ]);
-
-        // Render the index view and pass the dataProvider to it
+        $services = Service::find()->all();
+        // Pass the data provider to the view
         return $this->render('index', [
             'dataProvider' => $dataProvider,
+            'services'=>$services,
         ]);
     }
     public function actionCreate()
     {
         $model = new Service();
+    
         if ($model->load(Yii::$app->request->post())) {
-            Yii::debug('Form data loaded: ' . var_export(Yii::$app->request->post(), true), __METHOD__);
-        
-            $model->imageFile = UploadedFile::getInstance($model, 'imageFile'); // Handle file input
-            if ($model->validate()) {
-                Yii::debug('Model validated successfully', __METHOD__);
+            // Handle image upload
+            $imageFile = UploadedFile::getInstance($model, 'imageFile');
+            if ($imageFile) {
+                // Call the uploadImage method on the model instance
+                $imagePath = $model->uploadImage($imageFile);
+                if ($imagePath) {
+                    // Save the service first to get its ID
+                    if ($model->save()) {
+                        // Save the image to the `services_images` table
+                        $serviceImage = new ServicesImages();
+                        $serviceImage->service_id = $model->id; // Set the service_id
+                        $serviceImage->image_url = $imagePath; // Set the image_url
+                        if (!$serviceImage->save()) {
+                            Yii::error('Failed to save service image: ' . print_r($serviceImage->errors, true), __METHOD__);
+                        } else {
+                            Yii::info('Service image saved successfully: ' . $imagePath, __METHOD__);
+                        }
+                    }
+                }
             } else {
-                Yii::debug('Validation failed: ' . var_export($model->errors, true), __METHOD__);
+                // Save the service without an image
+                $model->save();
             }
-        }
-        
-        if ($model->load(Yii::$app->request->post())) {
-            $model->imageFile = UploadedFile::getInstance($model, 'imageFile'); // Get the uploaded file
-            if ($model->uploadImage() && $model->save()) { // Save model only after successful file upload
-                Yii::$app->session->setFlash('success', 'Service created successfully!');
-                return $this->redirect('index');//rect to view page
-            } else {
-                Yii::debug('Failed to save service: ' . var_export($model->errors, true), __METHOD__);
-            }
+    
+            Yii::$app->session->setFlash('success', 'Service created successfully.');
+            return $this->redirect(['index']);
         }
     
         return $this->render('create', [
             'model' => $model,
         ]);
     }
+    
+    public function actionUpdate($id)
+    {
+        $model = $this->findModel($id);
+    
+        if ($model->load(Yii::$app->request->post())) {
+            // Handle image upload
+            $imageFile = UploadedFile::getInstance($model, 'imageFile');
+            if ($imageFile) {
+                // Call the uploadImage method on the model instance
+                $imagePath = $model->uploadImage($imageFile);
+                if ($imagePath) {
+                    // Save the service first to ensure the ID is available
+                    if ($model->save()) {
+                        // Save the new image to the `services_images` table
+                        $serviceImage = new ServicesImages();
+                        $serviceImage->service_id = $model->id; // Set the service_id
+                        $serviceImage->image_url = $imagePath; // Set the image_url
+                        if (!$serviceImage->save()) {
+                            Yii::error('Failed to save service image: ' . print_r($serviceImage->errors, true), __METHOD__);
+                        } else {
+                            Yii::info('Service image saved successfully: ' . $imagePath, __METHOD__);
+                        }
+                    }
+                }
+            } else {
+                // Save the service without an image
+                $model->save();
+            }
+    
+            Yii::$app->session->setFlash('success', 'Service updated successfully.');
+            return $this->redirect(['index']);
+        }
+    
+        return $this->render('update', [
+            'model' => $model,
+        ]);
+    }
+
     protected function findModel($id)
 {
     if (($model = Service::findOne($id)) !== null) {
@@ -75,49 +131,7 @@ class ServiceController extends Controller
     return $this->redirect(['index']);
 }
 
-public function actionUpdate($id)
-{
-    $model = Service::findOne($id);
 
-    if (!$model) {
-        throw new NotFoundHttpException('The requested service does not exist.');
-    }
-
-    if ($model->load(Yii::$app->request->post())) {
-        // Handle file upload
-        $model->imageFile = UploadedFile::getInstance($model, 'imageFile');
-
-        if ($model->imageFile) {
-            // Upload the new image and get the absolute file path
-            $absoluteFilePath = $model->uploadImage();
-
-            if ($absoluteFilePath) {
-                // Delete the old image file if it exists
-                if ($model->image_url && file_exists($model->image_url)) {
-                    unlink($model->image_url);
-                }
-
-                // Save the new absolute file path to the database
-                $model->image_url = $absoluteFilePath; // Ensure this is a string
-            } else {
-                Yii::$app->session->setFlash('error', 'Failed to upload the new image.');
-                return $this->refresh();
-            }
-        }
-
-        // Save the model
-        if ($model->save()) {
-            Yii::$app->session->setFlash('success', 'Service updated successfully!');
-            return $this->redirect(['index']);
-        } else {
-            Yii::$app->session->setFlash('error', 'Failed to update the service.');
-        }
-    }
-
-    return $this->render('update', [
-        'model' => $model,
-    ]);
-}
 
     public function actionDelete($id)
     {
@@ -127,5 +141,24 @@ public function actionUpdate($id)
         }
 
         return $this->redirect(['index']);
+    }
+    public function actionViewLogs($entity, $entity_id)
+    {
+        $logs = ChangeLogs::find()
+            ->where(['entity' => $entity, 'entity_id' => $entity_id])
+            ->orderBy(['created_at' => SORT_DESC])
+            ->all();
+    
+        // Fetch all images for the service
+        $serviceImages = ServicesImages::find()
+            ->where(['service_id' => $entity_id])
+            ->orderBy(['created_at' => SORT_DESC])
+            ->all();
+    
+        // Render the view file from the `views/logs` directory
+        return $this->render('@app/views/logs/view-logs', [
+            'logs' => $logs,
+            'serviceImages' => $serviceImages, // Pass the images to the view
+        ]);
     }
 }

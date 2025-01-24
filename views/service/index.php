@@ -23,13 +23,19 @@ $this->params['breadcrumbs'][] = $this->title;
                     <div class="card-body">
                         <!-- Extract the relative path from the absolute path -->
                         <?php
-                        $absolutePath = $model->image_url;
-                        $relativePath = str_replace(Yii::getAlias('@webroot') . '/', '', $absolutePath);
+                        foreach ($services as $service) {
+                            $latestImage = $service->latestImage;
+                            echo '<div>';
+                            echo '<h2>' . $service->name . '</h2>';
+                            if ($latestImage) {
+                                echo '<img src="' . $latestImage->image_url . '" alt="Service Image" style="max-width: 200px;">';
+                            } else {
+                                echo 'No image available.';
+                            }
+                            echo '</div>';
+                        }
+                        
                         ?>
-                        <?= Html::img(
-                            Yii::getAlias('@web') . '/' . $relativePath,
-                            ['alt' => $model->name, 'class' => 'img-fluid mb-3', 'style' => 'max-height: 200px;']
-                        ) ?>
                         <p class="card-text"><?= Html::encode($model->description) ?></p>
                         <p><strong>Price:</strong> <?= Yii::$app->formatter->asCurrency($model->price, 'SAR') ?></p>
                         <p><strong>Discount Price:</strong> <?= Yii::$app->formatter->asCurrency($model->discount_price, 'SAR') ?></p>
@@ -57,6 +63,9 @@ $this->params['breadcrumbs'][] = $this->title;
                             'class' => 'btn btn-danger btn-sm',
                             'data-method' => 'post',
                             'data-confirm' => 'Are you sure you want to delete this service?',
+                        ]) ?>
+                        <?= Html::a('View Logs', ['service/view-logs', 'entity' => 'Service', 'entity_id' => $model->id], [
+                            'class' => 'btn btn-info btn-sm',
                         ]) ?>
                     </div>
                 </div>

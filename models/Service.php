@@ -3,7 +3,7 @@ namespace app\models;
 
 use Yii;
 use yii\web\UploadedFile;
-
+use app\behaviors\LoggingBehavior;
 class Service extends \yii\db\ActiveRecord
 {
     public $imageFile; // This is needed for file upload (not part of the database)
@@ -48,34 +48,37 @@ class Service extends \yii\db\ActiveRecord
             'imageFile' => 'Service Image', 
         ];
     }
-
+    public function behaviors()
+    {
+        return [
+            LoggingBehavior::class,
+        ];
+    }
     /**
      * Handles the file upload and saves it to the server.
      */
-    public function uploadImage()
+    public function uploadImage($imageFile)
 {
-    if ($this->imageFile) {
-        // Generate a unique file name
-        $fileName = uniqid() . '.' . $this->imageFile->extension;
-
-        // Define the full server path
-        $filePath = Yii::getAlias('@webroot/uploads/') . $fileName;
-
-        // Ensure the uploads directory exists
-        $uploadDir = dirname($filePath);
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true); // Create the directory if it doesn't exist
-        }
-
-        // Save the file to the server
-        if ($this->imageFile->saveAs($filePath, false)) {
-            return $filePath; // Return the absolute file path as a string
-        } else {
-            Yii::error('File upload failed', __METHOD__);
-        }
+    if (!$imageFile) {
+        Yii::error('No image file provided.', __METHOD__);
+        return null;
     }
 
-    return false; // Return false if the file upload fails
+    $uploadDir = Yii::getAlias('@webroot/uploads/');
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+    }
+
+    $fileName = uniqid() . '.' . $imageFile->extension;
+    $filePath = $uploadDir . $fileName;
+
+    if ($imageFile->saveAs($filePath)) {
+        Yii::info('Image uploaded successfully: ' . $filePath, __METHOD__);
+        return '/uploads/' . $fileName; // Return the relative path
+    }
+
+    Yii::error('Failed to save image: ' . $filePath, __METHOD__);
+    return null;
 }
     
 
@@ -86,5 +89,10 @@ class Service extends \yii\db\ActiveRecord
     public function getCategory()
     {
         return $this->hasOne(Category::class, ['id' => 'category_id']);
+    }
+    public function getLatestImage()
+    {
+        return $this->hasOne(ServicesImages::class, ['service_id' => 'id'])
+            ->orderBy(['created_at' => SORT_DESC]);
     }
 }

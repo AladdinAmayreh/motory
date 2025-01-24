@@ -3,6 +3,7 @@ namespace app\controllers;
 
 use Yii;
 use app\models\Category;
+use app\models\ChangeLogs;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -40,15 +41,29 @@ class CategoryController extends Controller
     public function actionUpdate($id)
     {
         $model = Category::findOne($id);
+    
         if (!$model) {
-            throw new NotFoundHttpException('Category not found.');
+            throw new NotFoundHttpException('The requested category does not exist.');
         }
-
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['index']);
+    
+        Yii::debug('Before Load: ' . print_r($model->attributes, true), __METHOD__); // Debugging
+    
+        if ($model->load(Yii::$app->request->post())) {
+            Yii::debug('Form Data: ' . print_r(Yii::$app->request->post(), true), __METHOD__); // Debugging
+            Yii::debug('After Load: ' . print_r($model->attributes, true), __METHOD__); // Debugging
+            Yii::debug('Dirty Attributes: ' . print_r($model->getDirtyAttributes(), true), __METHOD__); // Debugging
+    
+            if ($model->save()) {
+                Yii::$app->session->setFlash('success', 'Category updated successfully!');
+                return $this->redirect(['view', 'id' => $model->id]);
+            } else {
+                Yii::$app->session->setFlash('error', 'Failed to update the category.');
+            }
         }
-
-        return $this->render('update', ['model' => $model]);
+    
+        return $this->render('update', [
+            'model' => $model,
+        ]);
     }
 
     public function actionDelete($id)
@@ -60,4 +75,16 @@ class CategoryController extends Controller
 
         return $this->redirect(['index']);
     }
+    public function actionViewLogs($entity, $entity_id)
+{
+    $logs = ChangeLogs::find()
+        ->where(['entity' => $entity, 'entity_id' => $entity_id])
+        ->orderBy(['created_at' => SORT_DESC])
+        ->all();
+
+    // Correct the view path to 'logs/view-logs'
+    return $this->render('@app/views/logs/view-logs', [
+        'logs' => $logs,
+    ]);
+}
 }
