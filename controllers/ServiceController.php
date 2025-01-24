@@ -149,16 +149,19 @@ class ServiceController extends Controller
             ->orderBy(['created_at' => SORT_DESC])
             ->all();
     
-        // Fetch all images for the service
-        $serviceImages = ServicesImages::find()
-            ->where(['service_id' => $entity_id])
-            ->orderBy(['created_at' => SORT_DESC])
-            ->all();
+        // Fetch service images only if the entity is a service
+        $serviceImages = [];
+        if ($entity === 'service') {
+            $serviceImages = ServicesImages::find()
+                ->where(['service_id' => $entity_id])
+                ->orderBy(['created_at' => SORT_DESC])
+                ->all();
+        }
     
-        // Render the view file from the `views/logs` directory
         return $this->render('@app/views/logs/view-logs', [
             'logs' => $logs,
-            'serviceImages' => $serviceImages, // Pass the images to the view
+            'serviceImages' => $serviceImages, // Pass the images to the view (empty for categories)
+            'entity' => $entity, // Pass the entity type to the view
         ]);
     }
 }

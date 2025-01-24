@@ -3,6 +3,7 @@ namespace app\controllers;
 
 use Yii;
 use app\models\Category;
+use app\models\ServicesImages;
 use app\models\ChangeLogs;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
@@ -55,7 +56,7 @@ class CategoryController extends Controller
     
             if ($model->save()) {
                 Yii::$app->session->setFlash('success', 'Category updated successfully!');
-                return $this->redirect(['view', 'id' => $model->id]);
+                return $this->redirect(['index']);
             } else {
                 Yii::$app->session->setFlash('error', 'Failed to update the category.');
             }
@@ -76,15 +77,25 @@ class CategoryController extends Controller
         return $this->redirect(['index']);
     }
     public function actionViewLogs($entity, $entity_id)
-{
-    $logs = ChangeLogs::find()
-        ->where(['entity' => $entity, 'entity_id' => $entity_id])
-        ->orderBy(['created_at' => SORT_DESC])
-        ->all();
-
-    // Correct the view path to 'logs/view-logs'
-    return $this->render('@app/views/logs/view-logs', [
-        'logs' => $logs,
-    ]);
-}
+    {
+        $logs = ChangeLogs::find()
+            ->where(['entity' => $entity, 'entity_id' => $entity_id])
+            ->orderBy(['created_at' => SORT_DESC])
+            ->all();
+    
+        // Fetch service images only if the entity is a service
+        $serviceImages = [];
+        if ($entity === 'service') {
+            $serviceImages = ServicesImages::find()
+                ->where(['service_id' => $entity_id])
+                ->orderBy(['created_at' => SORT_DESC])
+                ->all();
+        }
+    
+        return $this->render('@app/views/logs/view-logs', [
+            'logs' => $logs,
+            'serviceImages' => $serviceImages, // Pass the images to the view (empty for categories)
+            'entity' => $entity, // Pass the entity type to the view
+        ]);
+    }
 }
