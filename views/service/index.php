@@ -21,26 +21,19 @@ $this->params['breadcrumbs'][] = $this->title;
                         <h5><?= Html::encode($model->name) ?></h5>
                     </div>
                     <div class="card-body">
-                        <!-- Extract the relative path from the absolute path -->
-                        <?php
-                        foreach ($services as $service) {
-                            $latestImage = $service->latestImage;
-                            echo '<div>';
-                            echo '<h2>' . $service->name . '</h2>';
-                            if ($latestImage) {
-                                echo '<img src="' . $latestImage->image_url . '" alt="Service Image" style="max-width: 200px;">';
-                            } else {
-                                echo 'No image available.';
-                            }
-                            echo '</div>';
-                        }
-                        
-                        ?>
+                        <!-- Display the service image -->
+                        <?php if ($model->latestImage): ?>
+                            <img src="<?= Html::encode($model->latestImage->image_url) ?>" alt="<?= Html::encode($model->name) ?>" style="width: 100%; height: 200px; object-fit: cover;">
+                        <?php else: ?>
+                            <p>No image available.</p>
+                        <?php endif; ?>
+
+                        <!-- Display other service details -->
                         <p class="card-text"><?= Html::encode($model->description) ?></p>
                         <p><strong>Price:</strong> <?= Yii::$app->formatter->asCurrency($model->price, 'SAR') ?></p>
                         <p><strong>Discount Price:</strong> <?= Yii::$app->formatter->asCurrency($model->discount_price, 'SAR') ?></p>
                         <p>
-                            <strong>Status:</strong> 
+                            <strong>Status:</strong>
                             <?= Html::a(
                                 $model->status ? 'Published' : 'Unpublished',
                                 Url::to(['toggle-status', 'id' => $model->id]),
@@ -52,7 +45,7 @@ $this->params['breadcrumbs'][] = $this->title;
                             ) ?>
                         </p>
                         <p>
-                            <strong>Views:</strong> 
+                            <strong>Views:</strong>
                             <h5><?= Html::encode($model->views) ?></h5>
                         </p>
                         <p><strong>Category:</strong> <?= $model->category ? Html::encode($model->category->name) : 'No Category' ?></p>

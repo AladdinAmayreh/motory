@@ -12,6 +12,18 @@ $config = [
         '@npm' => '@vendor/npm-asset',
     ],
     'components' => [
+        'language' => 'en-US',
+        'i18n' => [
+            'translations' => [
+                'app*' => [
+                    'class' => 'yii\i18n\PhpMessageSource',
+                    'basePath' => '@app/messages',
+                    'fileMap' => [
+                        'app' => 'app.php',
+                    ],
+                ],
+            ],
+        ],
         'formatter' => [
             'class' => 'yii\i18n\Formatter',
             'currencyCode' => 'SAR',
