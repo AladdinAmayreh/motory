@@ -9,16 +9,17 @@ $config = [
     'bootstrap' => ['log'],
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
-        '@npm'   => '@vendor/npm-asset',
+        '@npm' => '@vendor/npm-asset',
     ],
     'components' => [
         'formatter' => [
             'class' => 'yii\i18n\Formatter',
-            'currencyCode' => 'SAR', 
-        'locale' => 'ar-SA',   
+            'currencyCode' => 'SAR',
+            'locale' => 'ar-SA',
         ],
 
         'request' => [
+            'baseUrl' => '',
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => 'tnxtuufu_XBkhTrR50cOBwn4yRnDswem',
         ],
@@ -49,14 +50,33 @@ $config = [
             ],
         ],
         'db' => $db,
-       
+
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'rules' => [
+
+                'admin/categories' => 'category/index',
+                'admin/categories/create' => 'category/create',
+                'admin/categories/update/<id:\d+>' => 'category/update',
+                'admin/categories/view/<id:\d+>' => 'category/view',
+                'admin/categories/delete/<id:\d+>' => 'category/delete',
+
+                'admin/services' => 'service/index',
+                'admin/services/create' => 'service/create',
+                'admin/services/update/<id:\d+>' => 'service/update',
+                'admin/services/view/<id:\d+>' => 'service/view',
+                'admin/services/delete/<id:\d+>' => 'service/delete',
+                '<action:\w+>' => 'site/<action>', // User routes
+                'GET services' => 'service/index', // Existing endpoint for listing services in the web interface
+                'GET services/<id:\d+>' => 'service/view', // Existing endpoint for viewing service details in the web interface
+
+                // New API endpoints
+                'GET api/services' => 'service/api-index', // Endpoint to list services (API)
+                'GET api/services/<id:\d+>' => 'service/api-view', // Endpoint to get service details (API)
             ],
         ],
-       
+
     ],
     'params' => $params,
 ];

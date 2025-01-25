@@ -23,6 +23,7 @@ class Service extends \yii\db\ActiveRecord
     {
         return [
             [['name', 'category_id', 'description'], 'required'], 
+            [['name', 'description'], 'string'], 
             [['status'], 'boolean'],
             [['price', 'discount_price', 'insurance_years'], 'number'], 
             [['imageFile'], 'file', 'skipOnEmpty' => false, 'extensions' => 'png, jpg, jpeg'], 
@@ -94,5 +95,9 @@ class Service extends \yii\db\ActiveRecord
     {
         return $this->hasOne(ServicesImages::class, ['service_id' => 'id'])
             ->orderBy(['created_at' => SORT_DESC]);
+    }
+    public function getImages()
+    {
+        return $this->hasMany(ServicesImages::class, ['service_id' => 'id']);
     }
 }

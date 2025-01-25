@@ -10,7 +10,7 @@ use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\web\UploadedFile;
 use yii\data\ActiveDataProvider;
-
+use yii\web\Response;
 
 class ServiceController extends Controller
 {
@@ -164,4 +164,52 @@ class ServiceController extends Controller
             'entity' => $entity, // Pass the entity type to the view
         ]);
     }
+    public function actionApiIndex()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON; // Set response format to JSON
+
+        $services = Service::find()->all(); // Fetch all services
+
+        return array_map(function ($service) {
+            return [
+                'id' => $service->id,
+                'name' => $service->name,
+                'description' => $service->description,
+                'price' => $service->price,
+                'image_url' => $service->image_url,
+            ];
+        }, $services);
+    }
+
+    /**
+     * Endpoint to get the details of a specific service (API).
+     *
+     * @param int $id The ID of the service.
+     */
+    public function actionApiView($id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON; // Set response format to JSON
+    
+        $service = Service::findOne($id); // Fetch the service by ID
+    
+        if ($service === null) {
+            Yii::$app->response->statusCode = 404; // Not Found
+            return ['error' => 'Service not found'];
+        }
+    
+        return [
+            'id' => $service->id,
+            'name' => $service->name,
+            'description' => $service->description,
+            'price' => $service->price,
+            'category' => $service->category->name, // Assuming a relation to the Category model
+            'images' => array_map(function ($image) {
+                return [
+                    'image_url' => $image->image_url,
+                    'created_at' => $image->created_at,
+                ];
+            }, $service->images), // Use the images relation
+        ];
+    }
+
 }
