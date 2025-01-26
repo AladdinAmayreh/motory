@@ -10,6 +10,9 @@ use yii\web\NotFoundHttpException;
 
 class SiteController extends Controller
 {
+    /**
+     * {@inheritdoc}
+     */
     public function beforeAction($action)
     {
         // Check for language change parameter
@@ -32,6 +35,11 @@ class SiteController extends Controller
         return parent::beforeAction($action);
     }
 
+    /**
+     * Displays the homepage with a list of services.
+     *
+     * @return string
+     */
     public function actionIndex()
     {
         // Fetch all categories for the filter dropdown
@@ -56,6 +64,13 @@ class SiteController extends Controller
         ]);
     }
 
+    /**
+     * Displays the details of a specific service.
+     *
+     * @param int $id The ID of the service.
+     * @return string
+     * @throws NotFoundHttpException if the service is not found.
+     */
     public function actionView($id)
     {
         // Find the service by ID
@@ -79,17 +94,5 @@ class SiteController extends Controller
         return $this->render('view', [
             'service' => $service,
         ]);
-    }
-
-    public function actionAdminDashboard()
-    {
-        // Admin dashboard
-        return $this->render('admin-dashboard');
-    }
-
-    public function actionAdminServices()
-    {
-        // Admin services management
-        return $this->render('admin-services');
     }
 }

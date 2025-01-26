@@ -1,19 +1,25 @@
 <?php
+
 namespace app\controllers;
 
 use Yii;
+use yii\web\Controller;
+use yii\web\NotFoundHttpException;
+use yii\web\Response;
+use yii\web\UploadedFile;
+use yii\data\ActiveDataProvider;
 use app\models\Service;
 use app\models\Category;
 use app\models\ServicesImages;
 use app\models\ChangeLogs;
-use yii\web\Controller;
-use yii\web\NotFoundHttpException;
-use yii\web\UploadedFile;
-use yii\data\ActiveDataProvider;
-use yii\web\Response;
 
 class ServiceController extends Controller
 {
+    /**
+     * Displays a paginated list of services.
+     *
+     * @return string
+     */
     public function actionIndex()
     {
         // Create a data provider for the Service model
@@ -28,17 +34,26 @@ class ServiceController extends Controller
                 ],
             ],
         ]);
+
+        // Fetch all services for additional use (if needed)
         $services = Service::find()->all();
-        // Pass the data provider to the view
+
+        // Pass the data provider and services to the view
         return $this->render('index', [
             'dataProvider' => $dataProvider,
-            'services'=>$services,
+            'services' => $services,
         ]);
     }
+
+    /**
+     * Creates a new service.
+     *
+     * @return string|\yii\web\Response
+     */
     public function actionCreate()
     {
         $model = new Service();
-    
+
         if ($model->load(Yii::$app->request->post())) {
             // Handle image upload
             $imageFile = UploadedFile::getInstance($model, 'imageFile');
@@ -63,20 +78,26 @@ class ServiceController extends Controller
                 // Save the service without an image
                 $model->save();
             }
-    
+
             Yii::$app->session->setFlash('success', 'Service created successfully.');
             return $this->redirect(['index']);
         }
-    
+
         return $this->render('create', [
             'model' => $model,
         ]);
     }
-    
+
+    /**
+     * Updates an existing service.
+     *
+     * @param int $id The ID of the service.
+     * @return string|\yii\web\Response
+     */
     public function actionUpdate($id)
     {
         $model = $this->findModel($id);
-    
+
         if ($model->load(Yii::$app->request->post())) {
             // Handle image upload
             $imageFile = UploadedFile::getInstance($model, 'imageFile');
@@ -101,54 +122,64 @@ class ServiceController extends Controller
                 // Save the service without an image
                 $model->save();
             }
-    
+
             Yii::$app->session->setFlash('success', 'Service updated successfully.');
             return $this->redirect(['index']);
         }
-    
+
         return $this->render('update', [
             'model' => $model,
         ]);
     }
 
-    protected function findModel($id)
-{
-    if (($model = Service::findOne($id)) !== null) {
-        return $model;
-    }
-    throw new NotFoundHttpException('The requested page does not exist.');
-}
-
+    /**
+     * Toggles the status of a service.
+     *
+     * @param int $id The ID of the service.
+     * @return \yii\web\Response
+     */
     public function actionToggleStatus($id)
-{
-    $model = $this->findModel($id);
-    $model->status = !$model->status; // Toggle the status
-    if ($model->save(false)) { // Save without validation
-        Yii::$app->session->setFlash('success', 'Status updated successfully!');
-    } else {
-        Yii::$app->session->setFlash('error', 'Failed to update status!');
+    {
+        $model = $this->findModel($id);
+        $model->status = !$model->status; // Toggle the status
+        if ($model->save(false)) { // Save without validation
+            Yii::$app->session->setFlash('success', 'Status updated successfully!');
+        } else {
+            Yii::$app->session->setFlash('error', 'Failed to update status!');
+        }
+        return $this->redirect(['index']);
     }
-    return $this->redirect(['index']);
-}
 
-
-
+    /**
+     * Deletes a service.
+     *
+     * @param int $id The ID of the service.
+     * @return \yii\web\Response
+     */
     public function actionDelete($id)
     {
-        $model = Service::findOne($id);
+        $model = $this->findModel($id);
         if ($model) {
             $model->delete();
         }
 
         return $this->redirect(['index']);
     }
+
+    /**
+     * Displays logs for a specific entity (e.g., service or category).
+     *
+     * @param string $entity The entity type (e.g., 'service').
+     * @param int $entity_id The ID of the entity.
+     * @return string
+     */
     public function actionViewLogs($entity, $entity_id)
     {
         $logs = ChangeLogs::find()
             ->where(['entity' => $entity, 'entity_id' => $entity_id])
             ->orderBy(['created_at' => SORT_DESC])
             ->all();
-    
+
         // Fetch service images only if the entity is a service
         $serviceImages = [];
         if ($entity === 'service') {
@@ -157,13 +188,19 @@ class ServiceController extends Controller
                 ->orderBy(['created_at' => SORT_DESC])
                 ->all();
         }
-    
+
         return $this->render('@app/views/logs/view-logs', [
             'logs' => $logs,
             'serviceImages' => $serviceImages, // Pass the images to the view (empty for categories)
             'entity' => $entity, // Pass the entity type to the view
         ]);
     }
+
+    /**
+     * API endpoint to fetch all services.
+     *
+     * @return array
+     */
     public function actionApiIndex()
     {
         Yii::$app->response->format = Response::FORMAT_JSON; // Set response format to JSON
@@ -182,21 +219,22 @@ class ServiceController extends Controller
     }
 
     /**
-     * Endpoint to get the details of a specific service (API).
+     * API endpoint to fetch details of a specific service.
      *
      * @param int $id The ID of the service.
+     * @return array
      */
     public function actionApiView($id)
     {
         Yii::$app->response->format = Response::FORMAT_JSON; // Set response format to JSON
-    
+
         $service = Service::findOne($id); // Fetch the service by ID
-    
+
         if ($service === null) {
             Yii::$app->response->statusCode = 404; // Not Found
             return ['error' => 'Service not found'];
         }
-    
+
         return [
             'id' => $service->id,
             'name' => $service->name,
@@ -212,4 +250,18 @@ class ServiceController extends Controller
         ];
     }
 
+    /**
+     * Finds the Service model based on its primary key value.
+     *
+     * @param int $id The ID of the service.
+     * @return Service The loaded model.
+     * @throws NotFoundHttpException if the model cannot be found.
+     */
+    protected function findModel($id)
+    {
+        if (($model = Service::findOne($id)) !== null) {
+            return $model;
+        }
+        throw new NotFoundHttpException('The requested page does not exist.');
+    }
 }

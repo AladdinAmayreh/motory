@@ -1,24 +1,45 @@
 <?php
+
 namespace app\controllers;
 
 use Yii;
-use app\models\Category;
-use app\models\ServicesImages;
-use app\models\ChangeLogs;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use yii\data\ActiveDataProvider;
+use app\models\Category;
+use app\models\ServicesImages;
+use app\models\ChangeLogs;
 
 class CategoryController extends Controller
 {
+    /**
+     * {@inheritdoc}
+     */
+    public function behaviors()
+    {
+        return [
+            'verbs' => [
+                'class' => VerbFilter::class,
+                'actions' => [
+                    'delete' => ['POST'],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Displays a paginated list of categories.
+     *
+     * @return string
+     */
     public function actionIndex()
     {
         // Create an ActiveDataProvider instance
         $dataProvider = new ActiveDataProvider([
             'query' => Category::find(),
             'pagination' => [
-                'pageSize' => 20,  // Set the number of items per page
+                'pageSize' => 20, // Set the number of items per page
             ],
         ]);
 
@@ -28,61 +49,83 @@ class CategoryController extends Controller
         ]);
     }
 
+    /**
+     * Creates a new category.
+     *
+     * @return string|\yii\web\Response
+     */
     public function actionCreate()
     {
         $model = new Category();
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            Yii::$app->session->setFlash('success', 'Category created successfully.');
             return $this->redirect(['index']);
         }
 
-        return $this->render('create', ['model' => $model]);
+        return $this->render('create', [
+            'model' => $model,
+        ]);
     }
 
+    /**
+     * Updates an existing category.
+     *
+     * @param int $id The ID of the category.
+     * @return string|\yii\web\Response
+     * @throws NotFoundHttpException if the category is not found.
+     */
     public function actionUpdate($id)
     {
-        $model = Category::findOne($id);
-    
-        if (!$model) {
-            throw new NotFoundHttpException('The requested category does not exist.');
-        }
-    
-        Yii::debug('Before Load: ' . print_r($model->attributes, true), __METHOD__); // Debugging
-    
+        $model = $this->findModel($id);
+
         if ($model->load(Yii::$app->request->post())) {
-            Yii::debug('Form Data: ' . print_r(Yii::$app->request->post(), true), __METHOD__); // Debugging
-            Yii::debug('After Load: ' . print_r($model->attributes, true), __METHOD__); // Debugging
-            Yii::debug('Dirty Attributes: ' . print_r($model->getDirtyAttributes(), true), __METHOD__); // Debugging
-    
             if ($model->save()) {
-                Yii::$app->session->setFlash('success', 'Category updated successfully!');
+                Yii::$app->session->setFlash('success', 'Category updated successfully.');
                 return $this->redirect(['index']);
             } else {
                 Yii::$app->session->setFlash('error', 'Failed to update the category.');
             }
         }
-    
+
         return $this->render('update', [
             'model' => $model,
         ]);
     }
 
+    /**
+     * Deletes an existing category.
+     *
+     * @param int $id The ID of the category.
+     * @return \yii\web\Response
+     * @throws NotFoundHttpException if the category is not found.
+     */
     public function actionDelete($id)
     {
-        $model = Category::findOne($id);
-        if ($model) {
-            $model->delete();
+        $model = $this->findModel($id);
+        if ($model->delete()) {
+            Yii::$app->session->setFlash('success', 'Category deleted successfully.');
+        } else {
+            Yii::$app->session->setFlash('error', 'Failed to delete the category.');
         }
 
         return $this->redirect(['index']);
     }
+
+    /**
+     * Displays logs for a specific entity (e.g., category or service).
+     *
+     * @param string $entity The entity type (e.g., 'category').
+     * @param int $entity_id The ID of the entity.
+     * @return string
+     */
     public function actionViewLogs($entity, $entity_id)
     {
         $logs = ChangeLogs::find()
             ->where(['entity' => $entity, 'entity_id' => $entity_id])
             ->orderBy(['created_at' => SORT_DESC])
             ->all();
-    
+
         // Fetch service images only if the entity is a service
         $serviceImages = [];
         if ($entity === 'service') {
@@ -91,11 +134,26 @@ class CategoryController extends Controller
                 ->orderBy(['created_at' => SORT_DESC])
                 ->all();
         }
-    
+
         return $this->render('@app/views/logs/view-logs', [
             'logs' => $logs,
             'serviceImages' => $serviceImages, // Pass the images to the view (empty for categories)
             'entity' => $entity, // Pass the entity type to the view
         ]);
+    }
+
+    /**
+     * Finds the Category model based on its primary key value.
+     *
+     * @param int $id The ID of the category.
+     * @return Category The loaded model.
+     * @throws NotFoundHttpException if the model cannot be found.
+     */
+    protected function findModel($id)
+    {
+        if (($model = Category::findOne($id)) !== null) {
+            return $model;
+        }
+        throw new NotFoundHttpException('The requested category does not exist.');
     }
 }
